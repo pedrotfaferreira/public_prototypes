@@ -4408,11 +4408,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pedro.ferreira\\source\\repos\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
+      "projectUniqueName": "C:\\prjNet\\GitHub\\public_prototypes\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
       "projectName": "UpdateContainerCosmosDB",
-      "projectPath": "C:\\Users\\pedro.ferreira\\source\\repos\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
+      "projectPath": "C:\\prjNet\\GitHub\\public_prototypes\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
       "packagesPath": "C:\\Users\\pedro.ferreira\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pedro.ferreira\\source\\repos\\UpdateContainerCosmosDB\\obj\\",
+      "outputPath": "C:\\prjNet\\GitHub\\public_prototypes\\UpdateContainerCosmosDB\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -4444,7 +4444,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "all"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -4482,10 +4483,6 @@
           {
             "name": "Microsoft.AspNetCore.App.Ref",
             "version": "[8.0.11, 8.0.11]"
-          },
-          {
-            "name": "Microsoft.Net.Sdk.Compilers.Toolset",
-            "version": "[9.0.100, 9.0.100]"
           },
           {
             "name": "Microsoft.NETCore.App.Host.win-x64",

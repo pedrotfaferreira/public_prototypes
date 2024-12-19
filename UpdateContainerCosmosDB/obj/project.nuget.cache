@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UWcdUecBuao=",
+  "dgSpecHash": "YiyVVshH8Gc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pedro.ferreira\\source\\repos\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
+  "projectFilePath": "C:\\prjNet\\GitHub\\public_prototypes\\UpdateContainerCosmosDB\\UpdateContainerCosmosDB.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
@@ -87,9 +87,8 @@
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\xunit.core\\2.9.2\\xunit.core.2.9.2.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\xunit.extensibility.core\\2.9.2\\xunit.extensibility.core.2.9.2.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\xunit.extensibility.execution\\2.9.2\\xunit.extensibility.execution.2.9.2.nupkg.sha512",
-    "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.net.sdk.compilers.toolset\\9.0.100\\microsoft.net.sdk.compilers.toolset.9.0.100.nupkg.sha512",
-    "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.11\\microsoft.windowsdesktop.app.ref.8.0.11.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.11\\microsoft.netcore.app.ref.8.0.11.nupkg.sha512",
+    "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.11\\microsoft.windowsdesktop.app.ref.8.0.11.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.11\\microsoft.aspnetcore.app.ref.8.0.11.nupkg.sha512",
     "C:\\Users\\pedro.ferreira\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.11\\microsoft.netcore.app.host.win-x64.8.0.11.nupkg.sha512"
   ],
