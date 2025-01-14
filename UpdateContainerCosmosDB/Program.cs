@@ -1,6 +1,8 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UpdateContainerCosmosDB.Constants;
+using UpdateContainerCosmosDB.Models;
 
 class Program
 {
@@ -8,7 +10,10 @@ class Program
 
     static async Task Main(string[] args)
     {
-        cosmosClient = new CosmosClient(CosmosDB.EndpointUri, CosmosDB.PrimaryKey);
+        cosmosClient = new CosmosClient(CosmosDB.EndpointUri, CosmosDB.PrimaryKey, new CosmosClientOptions
+        {
+            SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
+        });
 
         while (true) // Restart loop
         {
@@ -16,8 +21,32 @@ class Program
 
             try
             {
-                var container = cosmosClient.GetContainer(CosmosDB.DatabaseName, CosmosDB.ContainerName);
-                await ExecuteQueryAndOperations(container);
+                Console.WriteLine("Enter Container you want to query: ");
+                string containerName = Console.ReadLine();
+
+                var container = cosmosClient.GetContainer(CosmosDB.DatabaseName, containerName);
+
+                if (containerName == "UsageRecords")
+                {
+                    await ExecuteQueryAndOperations<UsageRecord>(container);
+                }
+                else
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($"This Cosmos DataBase doesn't have the container {containerName}. Want to try again? (Y/N)\"");
+                    string? confirmation = Console.ReadLine()?.ToUpperInvariant();
+
+                    if (confirmation == "Y" || confirmation == "YES")
+                    {
+
+                        continue; // Restart the loop
+                    }
+                    else
+                    {
+                        Console.WriteLine("Exiting the program...");
+                        break; // Exit the loop and terminate the program
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -35,9 +64,9 @@ class Program
         }
     }
 
-    private static async Task ExecuteQueryAndOperations(Container container)
+    private static async Task ExecuteQueryAndOperations<T>(Container container)
     {
-        var itemsToProcess = new List<Dictionary<string, object>>();
+        var itemsToProcess = new List<T>();
         bool isValidQuery = false;
 
         while (!isValidQuery)
@@ -47,7 +76,7 @@ class Program
                 Console.WriteLine("Enter SQL query to filter items (e.g., SELECT * FROM c WHERE c.id = '<id>'):");
                 var sqlQuery = Console.ReadLine();
 
-                itemsToProcess = await FetchItemsAsync(container, sqlQuery);
+                itemsToProcess = await FetchItemsAsync<T>(container, sqlQuery);
                 if (itemsToProcess.Count == 0)
                 {
                     Console.WriteLine();
@@ -76,12 +105,13 @@ class Program
         await SelectOperation(container, itemsToProcess);
     }
 
-    private static async Task<List<Dictionary<string, object>>> FetchItemsAsync(Container container, string query)
+    private static async Task<List<T>> FetchItemsAsync<T>(Container container, string query)
     {
-        var items = new List<Dictionary<string, object>>();
+        var items = new List<T>();
         var queryDefinition = new QueryDefinition(query);
 
-        using var feedIterator = container.GetItemQueryIterator<Dictionary<string, object>>(queryDefinition);
+        using var feedIterator = container.GetItemQueryIterator<T>(queryDefinition);
+
         while (feedIterator.HasMoreResults)
         {
             var response = await feedIterator.ReadNextAsync();
@@ -97,19 +127,21 @@ class Program
         return items;
     }
 
-    private static async Task SelectOperation(Container container, List<Dictionary<string, object>> itemsToProcess)
+    private static async Task SelectOperation<T>(Container container, List<T> itemsToProcess)
     {
-        Console.WriteLine("Choose operation: UPDATE or DELETE");
+        Console.WriteLine("Choose operation: UPSERT (new properties and values) or DELETE (records)");
         string? operation = Console.ReadLine()?.ToUpperInvariant();
 
         switch (operation)
         {
-            case "DELETE":
-                await ConfirmAndDeleteItems(container, itemsToProcess);
+
+
+            case "UPSERT":
+                await ConfirmAndUpdateItems(container, itemsToProcess);
                 break;
 
-            case "UPDATE":
-                await ConfirmAndUpdateItems(container, itemsToProcess);
+            case "DELETE":
+                await ConfirmAndDeleteItems(container, itemsToProcess);
                 break;
 
             default:
@@ -119,7 +151,7 @@ class Program
         }
     }
 
-    private static async Task ConfirmAndDeleteItems(Container container, List<Dictionary<string, object>> itemsToProcess)
+    private static async Task ConfirmAndDeleteItems<T>(Container container, List<T> itemsToProcess)
     {
         Console.WriteLine();
         Console.WriteLine("This operation will DELETE all selected items. Proceed? (Y/N)");
@@ -136,16 +168,18 @@ class Program
         }
     }
 
-    private static async Task ConfirmAndUpdateItems(Container container, List<Dictionary<string, object>> itemsToProcess)
+    private static async Task ConfirmAndUpdateItems<T>(Container container, List<T> itemsToProcess)
     {
         Console.WriteLine("Properties in selected items:");
-        string properties = string.Join(", ", itemsToProcess.First().Keys);
-        Console.WriteLine($"Available properties: {properties}");
+
+        var properties = typeof(T).GetProperties().Select(p => p.Name);
+
+        Console.WriteLine($"Available properties: {string.Join(", ", typeof(T).GetProperties().Select(p => p.Name))}");
 
         Console.WriteLine("Enter the property to update:");
         string? propertyToUpdate = Console.ReadLine();
 
-        bool propertyExists = itemsToProcess.Any(item => item.ContainsKey(propertyToUpdate));
+        bool propertyExists = properties.Contains(propertyToUpdate);
 
         if (!propertyExists)
         {
@@ -164,8 +198,15 @@ class Program
 
             if (confirmation == "Y" || confirmation == "YES")
             {
-                KeyValuePair<string, object> updateParameter = new KeyValuePair<string, object>(propertyToUpdate, newValue);
-                await UpsertRecordsAsync(itemsToProcess, container, updateParameter);
+                var propertyInfo = typeof(T).GetProperty(propertyToUpdate);
+                if (propertyInfo != null)
+                {
+                    foreach (var item in itemsToProcess)
+                    {
+                        propertyInfo.SetValue(item, Convert.ChangeType(newValue, propertyInfo.PropertyType));
+                    }
+                    await UpsertRecordsAsync(itemsToProcess, container);
+                }
             }
             else
             {
@@ -175,42 +216,46 @@ class Program
         }
     }
 
-    public static async Task DeleteRecordsAsync(List<Dictionary<string, object>> itemsToProcess, Container container)
+    public static async Task DeleteRecordsAsync<T>(List<T> itemsToProcess, Container container)
     {
         foreach (var item in itemsToProcess)
         {
+            var propertyInfo = typeof(T).GetProperty("Id");
+            string idValue = propertyInfo?.GetValue(item)?.ToString();
+
             try
             {
-                await container.DeleteItemAsync<Dictionary<string, object>>(
-                    item["id"].ToString(),
-                    new PartitionKey(item["id"].ToString())
-                );
+                await container.DeleteItemAsync<T>(idValue, new PartitionKey(idValue));
+
                 Console.WriteLine();
-                Console.WriteLine($"Deleted item with id: {item["id"]}");
+                Console.WriteLine($"Deleted item with id: {idValue}");
             }
             catch (CosmosException ex)
             {
                 Console.WriteLine();
-                Console.WriteLine($"Failed to delete item with id: {item["id"]}. Error: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine($"Failed to delete item with id: {idValue}. Error: {ex.StatusCode} - {ex.Message}");
             }
         }
     }
 
-    public static async Task UpsertRecordsAsync(List<Dictionary<string, object>> itemsToProcess, Container container, KeyValuePair<string, object> parameter)
+    public static async Task UpsertRecordsAsync<T>(List<T> itemsToProcess, Container container)
     {
         foreach (var item in itemsToProcess)
         {
+            var propertyInfo = typeof(T).GetProperty("Id");
+            string? idValue = propertyInfo?.GetValue(item)?.ToString();
+
             try
             {
-                item[parameter.Key] = parameter.Value;
-                await container.UpsertItemAsync(item, new PartitionKey(item["id"].ToString()));
-                Console.WriteLine();
-                Console.WriteLine($"Updated item with id: {item["id"]}");
+                await container.UpsertItemAsync(item, new PartitionKey(idValue));
+                Console.WriteLine();          
+
+                Console.WriteLine($"Updated item with id: {idValue}");
             }
             catch (CosmosException ex)
             {
                 Console.WriteLine();
-                Console.WriteLine($"Failed to update item with id: {item["id"]}. Error: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine($"Failed to update item with id: {idValue}. Error: {ex.StatusCode} - {ex.Message}");
             }
         }
     }
