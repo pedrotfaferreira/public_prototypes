@@ -21,7 +21,7 @@ class Program
 
             try
             {
-                Console.WriteLine("Enter Container you want to query: ");
+                Console.WriteLine("Enter the Container you want to query: ");
                 string containerName = Console.ReadLine();
 
                 var container = cosmosClient.GetContainer(CosmosDB.DatabaseName, containerName);
@@ -94,6 +94,7 @@ class Program
             {
                 Console.WriteLine();
                 Console.WriteLine($"Error querying Cosmos DB: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine();
             }
             catch (Exception ex)
             {
@@ -129,14 +130,14 @@ class Program
 
     private static async Task SelectOperation<T>(Container container, List<T> itemsToProcess)
     {
-        Console.WriteLine("Choose operation: UPSERT (new properties and values) or DELETE (records)");
+        Console.WriteLine("Choose operation: UPDATE (new properties and values) or DELETE (records)");
         string? operation = Console.ReadLine()?.ToUpperInvariant();
 
         switch (operation)
         {
 
 
-            case "UPSERT":
+            case "UPDATE":
                 await ConfirmAndUpdateItems(container, itemsToProcess);
                 break;
 
@@ -145,6 +146,7 @@ class Program
                 break;
 
             default:
+                Console.WriteLine();
                 Console.WriteLine("Invalid operation. Please try again.");
                 await SelectOperation(container, itemsToProcess);
                 break;
@@ -170,12 +172,11 @@ class Program
 
     private static async Task ConfirmAndUpdateItems<T>(Container container, List<T> itemsToProcess)
     {
-        Console.WriteLine("Properties in selected items:");
-
         var properties = typeof(T).GetProperties().Select(p => p.Name);
 
+        Console.WriteLine();
         Console.WriteLine($"Available properties: {string.Join(", ", typeof(T).GetProperties().Select(p => p.Name))}");
-
+        Console.WriteLine();
         Console.WriteLine("Enter the property to update:");
         string? propertyToUpdate = Console.ReadLine();
 
@@ -201,17 +202,28 @@ class Program
                 var propertyInfo = typeof(T).GetProperty(propertyToUpdate);
                 if (propertyInfo != null)
                 {
-                    foreach (var item in itemsToProcess)
+                    try
                     {
-                        propertyInfo.SetValue(item, Convert.ChangeType(newValue, propertyInfo.PropertyType));
+                        foreach (var item in itemsToProcess)
+                        {
+
+                            propertyInfo.SetValue(item, Convert.ChangeType(newValue, propertyInfo.PropertyType));
+                            await UpsertRecordsAsync(itemsToProcess, container);
+                        }
                     }
-                    await UpsertRecordsAsync(itemsToProcess, container);
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine($"Failed to update item. Error: {ex.Message}. Please try Again.");
+                        Console.WriteLine();
+                        await ConfirmAndUpdateItems(container, itemsToProcess).ConfigureAwait(false);
+                    }
                 }
-            }
-            else
-            {
-                Console.WriteLine();
-                Console.WriteLine("Operation canceled.");
+                else
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Operation canceled.");
+                }
             }
         }
     }

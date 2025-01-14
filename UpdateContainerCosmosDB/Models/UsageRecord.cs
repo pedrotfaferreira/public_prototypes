@@ -95,11 +95,6 @@ namespace UpdateContainerCosmosDB.Models
         /// </summary>
         public DateTime Timestamp { get; set; }
 
-        /// <summary>
-        /// Gets or sets the value.
-        /// </summary>
-        public double Values { get; set; }
-
         #endregion
     }
 }
